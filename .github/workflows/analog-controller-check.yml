@@ -51,15 +51,35 @@ jobs:
           make -j4 include/all \
             dlls/dinput/i386-windows/dinput.dll \
             dlls/dinput8/i386-windows/dinput8.dll \
-            dlls/xinput1_3/i386-windows/xinput1_3.dll
+            dlls/xinput1_3/i386-windows/xinput1_3.dll \
+            dlls/winebox64/aarch64-windows/winebox64.dll \
+            dlls/wow64/aarch64-windows/wow64.dll \
+            dlls/wow64win/aarch64-windows/wow64win.dll \
+            dlls/ntdll/aarch64-windows/ntdll.dll \
+            dlls/win32u/aarch64-windows/win32u.dll \
+            dlls/apisetschema/aarch64-windows/apisetschema.dll
 
-      # Compile-only: these DLLs require a matching Switch runtime before use.
+      - name: Compile Switch runtime (without Mesa)
+        run: |
+          set -eu
+          sh wine-nx-probe/tools/bootstrap-box64-core.sh
+          docker run --rm --platform linux/arm64 -v "$PWD:/work" -w /work \
+            devkitpro/devkita64 sh -ec '
+              cmake -S wine-nx-probe -B wine-nx-probe/build-switch-wow64-dynarec -G Ninja \
+                -DCMAKE_TOOLCHAIN_FILE=/work/wine-nx-probe/cmake/switch-devkitA64.cmake \
+                -DWINE_NX_PE_BUILD_DIR=/work/wine-nx-probe/build-wine-wow64-pe \
+                -DWINE_NX_BOX64_DYNAREC=ON -DCMAKE_BUILD_TYPE=Release
+              cmake --build wine-nx-probe/build-switch-wow64-dynarec --target wine-nx-runtime-nro -j4
+            '
+
+      # Compile-only: this runtime lacks Mesa and must not replace a game-ready NRO.
       - uses: actions/upload-artifact@v4
         with:
-          name: analog-controller-dlls-compile-only
+          name: analog-controller-compile-only
           path: |
             wine-nx-probe/build-wine-wow64-pe/dlls/dinput/i386-windows/dinput.dll
             wine-nx-probe/build-wine-wow64-pe/dlls/dinput8/i386-windows/dinput8.dll
             wine-nx-probe/build-wine-wow64-pe/dlls/xinput1_3/i386-windows/xinput1_3.dll
+            wine-nx-probe/build-switch-wow64-dynarec/wine-nx-runtime.nro
           if-no-files-found: error
           retention-days: 3
