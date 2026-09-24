@@ -87,7 +87,7 @@ jobs:
               cmake -S wine-nx-probe -B wine-nx-probe/build-switch-wow64-dynarec -G Ninja \
                 -DCMAKE_TOOLCHAIN_FILE=/work/wine-nx-probe/cmake/switch-devkitA64.cmake \
                 -DWINE_NX_PE_BUILD_DIR=/work/wine-nx-probe/build-wine-wow64-pe \
-                -DWINE_NX_BOX64_DYNAREC=ON -DCMAKE_BUILD_TYPE=Release \
+                -DWINE_NX_BOX64_DYNAREC=ON -DWINE_NX_LSFG=OFF -DCMAKE_BUILD_TYPE=Release \
                 -DWINE_NX_MESA_SWITCH_DIR=/work/wine-nx-probe/build-mesa-switch/install/opt/devkitpro/portlibs/switch/lib
               cmake --build wine-nx-probe/build-switch-wow64-dynarec --target wine-nx-runtime-nro -j4
             '
