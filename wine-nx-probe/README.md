@@ -323,6 +323,16 @@ does, and what it is set to -- a switch, a value the row changes where it
 stands, or an arrow into a screen of its own. L and R move between sections, so
 Left and Right stay the row's own.
 
+**Analog controller** under a game's Diagnostics exposes the Switch pad as a
+DirectInput joystick for older games that do not use XInput. It is off by
+default and stored as `directinput=1` in that game's `.wine-nx.txt`. The left
+stick is X/Y; the right stick is Rx/Ry, with its upward travel also exposed as
+gas (Z) and downward travel as brake (Rz). While enabled, neither stick sends
+Autorun's mouse movement or keyboard directions; other button mappings and
+touch input remain available for menus. This bridge has host mapping tests but
+still needs a Switch build and in-game validation, including axis binding in
+Richard Burns Rally.
+
 **Address space** under Game Settings says what a game needs of the address space
 Horizon gives Wine-NX. A game with no relocations is linked for one address and
 no other, and only a forwarder made with a 32-bit address space has the low 4 GB

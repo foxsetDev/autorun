@@ -78,6 +78,13 @@ static void test_settings( const char *dir )
     assert( settings.verbose == 1 && settings.profile == 0 && settings.framebuffer == 1 && settings.dxvk == 1 );
     assert( settings.hidden == 0 && !settings.title[0] );  /* only 1 or on hides */
     assert( settings.address_space == -1 );                /* absent: read it from the program */
+    assert( !settings.directinput );                       /* existing games keep their controls */
+    load_text( &kv, "directinput=1\n" );
+    launcher_settings_read( &kv, &settings );
+    assert( settings.directinput && launcher_settings_write( &kv, &settings ) );
+    assert( strstr( kv.text, "directinput=1" ) );
+    settings.directinput = 0;
+    assert( launcher_settings_write( &kv, &settings ) && !strstr( kv.text, "directinput=" ) );
     load_text( &kv, "address-space=32\n" );
     launcher_settings_read( &kv, &settings );
     assert( settings.address_space == 1 );

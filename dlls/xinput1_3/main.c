@@ -130,14 +130,32 @@ static HANDLE steam_overlay_event;
  * the console. Elsewhere __wine_init_unix_call fails and the HID path runs. */
 static BOOL nx_backend;
 
-static DWORD nx_get_state(DWORD index, XINPUT_STATE *state)
+static DWORD nx_get_state_impl(DWORD index, XINPUT_STATE *state, BOOL xinput_poll)
 {
     struct nx_xinput_state_params params = {index};
 
     if (index >= XUSER_MAX_COUNT) return ERROR_BAD_ARGUMENTS;
-    if (WINE_UNIX_CALL(nx_xinput_get_state, &params) || !params.connected) return ERROR_DEVICE_NOT_CONNECTED;
+    if (WINE_UNIX_CALL(xinput_poll ? nx_xinput_get_state : nx_xinput_peek_state, &params) || !params.connected)
+        return ERROR_DEVICE_NOT_CONNECTED;
     if (state) *state = params.state;
     return ERROR_SUCCESS;
+}
+
+static DWORD nx_get_state(DWORD index, XINPUT_STATE *state)
+{
+    return nx_get_state_impl(index, state, TRUE);
+}
+
+/* DirectInput's Switch-only virtual joystick uses the same pad backend. */
+DWORD WINAPI WineNxGetPadState(DWORD index, XINPUT_STATE *state)
+{
+    if (!nx_backend) return ERROR_DEVICE_NOT_CONNECTED;
+    return nx_get_state_impl(index, state, FALSE);
+}
+
+BOOL WINAPI WineNxHasPad(void)
+{
+    return nx_backend && nx_get_state_impl(0, NULL, FALSE) == ERROR_SUCCESS;
 }
 
 static DWORD nx_set_state(DWORD index, XINPUT_VIBRATION *vibration)

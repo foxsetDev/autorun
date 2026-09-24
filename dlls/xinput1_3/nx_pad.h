@@ -15,6 +15,7 @@ enum nx_xinput_funcs
 {
     nx_xinput_get_state,
     nx_xinput_set_state,
+    nx_xinput_peek_state,
     nx_xinput_funcs_count
 };
 

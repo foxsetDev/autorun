@@ -55,6 +55,8 @@ python3 "$root/wine-nx-probe/tests/check_waitable_timer.py"
     -I"$root/wine-nx-probe/tests/xinput-shims" -I"$root/include" \
     "$root/wine-nx-probe/tests/xinput_nx_pad.c" -o "$build/xinput_pad"
 "$build/xinput_pad"
+"${CC:-clang}" $flags "$root/wine-nx-probe/tests/nx_joystick_axes.c" -o "$build/nx_joystick_axes"
+"$build/nx_joystick_axes"
 "${CC:-clang}" $flags "$root/wine-nx-probe/tests/thread_profile.c" -o "$build/thread_profile"
 "$build/thread_profile"
 "${CC:-clang}" $flags "$root/wine-nx-probe/tests/box64_options.c" -o "$build/box64_options"

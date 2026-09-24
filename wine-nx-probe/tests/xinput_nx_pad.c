@@ -78,6 +78,14 @@ int main(void)
         assert(state.connected && state.state.Gamepad.wButtons == XINPUT_GAMEPAD_A);
         assert(state.state.Gamepad.bRightTrigger == 255 && state.state.Gamepad.sThumbLX == 123);
         assert(wine_nx_xinput_last_poll == mock_tick);
+        state.connected = 1;
+        wine_nx_xinput_unix_funcs[nx_xinput_peek_state](&state);
+        assert(!state.connected); /* off for games that have not enabled DirectInput */
+        wine_nx_dinput_enabled = 1;
+        mock_tick++;
+        wine_nx_xinput_unix_funcs[nx_xinput_peek_state](&state);
+        assert(state.connected && state.state.Gamepad.sThumbRY == -1234);
+        assert(wine_nx_xinput_last_poll == mock_tick - 1);
         /* The floating keyboard has the controller while it is up: still
          * there, nothing held. */
         mock_keyboard = 1;

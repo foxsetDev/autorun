@@ -193,6 +193,7 @@ struct launcher_settings
      * setting existed means; 0 Autorun's keys alone, the file kept for when it
      * is turned on again. */
     int own_controls;
+    int directinput;  /* expose Switch sticks as a DirectInput joystick */
     /* What the program needs of the address space (launcher_catalog.h):
      * -1 read it from the program itself, 0 any, 1 the low 4 GB. */
     int address_space;
@@ -379,6 +380,7 @@ static inline void launcher_settings_read( const struct launcher_kv *kv, struct 
     if (launcher_kv_get( kv, "dxvk-version", value, sizeof(value) ) && launcher_dxvk_version_valid( value ))
         memcpy( settings->dxvk_version, value, strlen( value ) + 1 );
     settings->own_controls = launcher_setting_state( kv, "own-controls" );
+    settings->directinput = launcher_setting_state( kv, "directinput" ) == 1;
     settings->dxvk_hud = 0;
     if (launcher_kv_get( kv, "dxvk-hud", value, sizeof(value) ))
         for (int i = 1; i < LAUNCHER_HUD_COUNT; i++)
@@ -451,6 +453,7 @@ static inline int launcher_settings_write( struct launcher_kv *kv, const struct 
            launcher_kv_set( kv, "upscaling-sharpness", settings->upscaling == 1 && settings->upscaling_sharpness != 2 ?
                             launcher_sharpness_labels[settings->upscaling_sharpness] : NULL ) &&
            launcher_kv_set( kv, "own-controls", states[settings->own_controls + 1] ) &&
+           launcher_kv_set( kv, "directinput", settings->directinput ? "1" : NULL ) &&
            launcher_kv_set( kv, "address-space", settings->address_space < 0 ? NULL :
                                                  settings->address_space ? "32-bit" : "any" );
 }

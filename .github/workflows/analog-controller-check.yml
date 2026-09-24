@@ -1,0 +1,65 @@
+name: Analog controller build check
+
+on:
+  push:
+    branches: [analog-controller-ci]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check stick mapping and per-game setting
+        run: |
+          set -eu
+          clang -std=gnu11 -Wall -Wextra -Werror wine-nx-probe/tests/nx_joystick_axes.c -o /tmp/nx-axes
+          /tmp/nx-axes
+          clang -std=gnu11 -Wall -Wextra -Werror wine-nx-probe/tests/launcher_settings.c -o /tmp/nx-settings
+          /tmp/nx-settings
+          clang -std=gnu11 -Wall -Wextra -Werror -D__WINESRC__ -DWINE_UNIX_LIB -D_WIN64 \
+            -Iwine-nx-probe/tests/xinput-shims -Iinclude \
+            wine-nx-probe/tests/xinput_nx_pad.c -o /tmp/nx-pad
+          /tmp/nx-pad
+
+      - name: Install Wine build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bison flex gettext make gcc g++ pkg-config xz-utils
+          curl -fL --retry 3 -o /tmp/llvm-mingw.tar.xz \
+            https://github.com/mstorsjo/llvm-mingw/releases/download/20260505/llvm-mingw-20260505-ucrt-ubuntu-22.04-aarch64.tar.xz
+          mkdir -p /tmp/nx-toolchain
+          tar -xJf /tmp/llvm-mingw.tar.xz -C /tmp/nx-toolchain --strip-components=1
+          rm /tmp/llvm-mingw.tar.xz
+          /tmp/nx-toolchain/bin/i686-w64-mingw32-clang --version
+
+      - name: Compile modified Wine DLLs
+        run: |
+          set -eu
+          export PATH="/tmp/nx-toolchain/bin:$PATH"
+          mkdir -p wine-nx-probe/build-wine-wow64-pe
+          cd wine-nx-probe/build-wine-wow64-pe
+          ../../configure --enable-archs=aarch64,i386 --enable-winebox64=aarch64 \
+            --disable-tests --without-x --without-freetype --without-alsa \
+            --without-pulse --without-dbus --without-fontconfig --without-udev \
+            --without-usb --without-gstreamer --without-vulkan
+          make -j4 include/all \
+            dlls/dinput/i386-windows/dinput.dll \
+            dlls/dinput8/i386-windows/dinput8.dll \
+            dlls/xinput1_3/i386-windows/xinput1_3.dll
+
+      # Compile-only: these DLLs require a matching Switch runtime before use.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: analog-controller-dlls-compile-only
+          path: |
+            wine-nx-probe/build-wine-wow64-pe/dlls/dinput/i386-windows/dinput.dll
+            wine-nx-probe/build-wine-wow64-pe/dlls/dinput8/i386-windows/dinput8.dll
+            wine-nx-probe/build-wine-wow64-pe/dlls/xinput1_3/i386-windows/xinput1_3.dll
+          if-no-files-found: error
+          retention-days: 3

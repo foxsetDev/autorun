@@ -1676,7 +1676,7 @@ enum program_row
     ROW_WINDOWS, ROW_D3D9, ROW_VKD3D_VERSION, ROW_DXVK_VERSION, ROW_DXVK_HUD, ROW_FRAME_LIMIT, ROW_VSYNC,
     ROW_LSFG, ROW_LSFG_DLL, ROW_LSFG_PERFORMANCE, ROW_LSFG_FLOW,
     ROW_UPSCALING, ROW_UPSCALING_SHARPNESS,
-    ROW_ADDRESS, ROW_OWN_CONTROLS, ROW_CONTROLS, ROW_BOX64,
+    ROW_ADDRESS, ROW_OWN_CONTROLS, ROW_CONTROLS, ROW_DIRECTINPUT, ROW_BOX64,
     ROW_HIDE, ROW_LIBRARY, PROGRAM_ROWS
 };
 
@@ -2582,6 +2582,12 @@ static int program_menu( struct launcher *l, struct program *p, char *target, si
             }
         }
 
+        ADD_ROW( ROW_DIRECTINPUT, SECTION_DIAGNOSTICS, "Analog controller",
+                 "Expose the Switch sticks as a DirectInput joystick. For older games that do not see XInput; "
+                 "the right stick also offers separate gas (up) and brake (down) axes." );
+        row->kind = UI_ROW_SWITCH;
+        row->on = p->settings.directinput;
+
         if (x86 || x64)
         {
             ADD_ROW( ROW_BOX64, SECTION_DIAGNOSTICS, "Box64 options",
@@ -2825,6 +2831,11 @@ static int program_menu( struct launcher *l, struct program *p, char *target, si
             save_program_settings( l, p );
             break;
         }
+
+        case ROW_DIRECTINPUT:
+            p->settings.directinput = action == UI_ACTION_RESET ? 0 : !p->settings.directinput;
+            save_program_settings( l, p );
+            break;
 
         case ROW_CONTROLS:
             if (action != UI_ACTION_CHOOSE) break;

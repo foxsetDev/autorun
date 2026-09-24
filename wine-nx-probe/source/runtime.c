@@ -831,6 +831,7 @@ unsigned int wine_nx_pad_key_state;
 
 /* When a program last read the controller through XInput (xinput_unix.c). */
 extern u64 wine_nx_xinput_last_poll;
+extern int wine_nx_dinput_enabled;
 
 /* How long + and - must be held together before the program is closed. */
 #define WINE_NX_QUIT_CHORD_NS 1000000000ull
@@ -943,13 +944,13 @@ int wine_nx_pointer_poll( int *x, int *y, unsigned int *buttons )
     else
     {
         wine_nx_touch_held = wine_nx_touch_dx = wine_nx_touch_dy = 0;
-        if (wine_nx_device_mode[WINE_NX_DEVICE_RIGHT] == WINE_NX_POINTS)
+        if (!wine_nx_dinput_enabled && wine_nx_device_mode[WINE_NX_DEVICE_RIGHT] == WINE_NX_POINTS)
             moved = gamepad ? 0 : pointer_cursor_step( &wine_nx_pointer, stick.x, stick.y,
                                                        armTicksToNs( now - wine_nx_pointer_tick ) );
     }
     /* The left stick points as well when it is set to, so a game played with
      * the mouse alone has both of them for it. */
-    if (!gamepad && !keyboard && wine_nx_device_mode[WINE_NX_DEVICE_LEFT] == WINE_NX_POINTS)
+    if (!wine_nx_dinput_enabled && !gamepad && !keyboard && wine_nx_device_mode[WINE_NX_DEVICE_LEFT] == WINE_NX_POINTS)
     {
         HidAnalogStickState left = padGetStickPos( &wine_nx_pad, 0 );
 
@@ -1000,14 +1001,14 @@ int wine_nx_pointer_poll( int *x, int *y, unsigned int *buttons )
         /* The left stick steers with the d-pad unless it was given keys of
          * its own: Halo walks with w, a, s and d and works its menus with the
          * arrows, and one controller has to do both. */
-        if (wine_nx_device_mode[WINE_NX_DEVICE_LEFT] == WINE_NX_PRESSES)
+        if (!wine_nx_dinput_enabled && wine_nx_device_mode[WINE_NX_DEVICE_LEFT] == WINE_NX_PRESSES)
         {
             if (steer.y >  12000) keys |= 1u << (wine_nx_pad_keys[WINE_NX_KEY_LUP] ? WINE_NX_KEY_LUP : WINE_NX_KEY_UP);
             if (steer.y < -12000) keys |= 1u << (wine_nx_pad_keys[WINE_NX_KEY_LDOWN] ? WINE_NX_KEY_LDOWN : WINE_NX_KEY_DOWN);
             if (steer.x < -12000) keys |= 1u << (wine_nx_pad_keys[WINE_NX_KEY_LLEFT] ? WINE_NX_KEY_LLEFT : WINE_NX_KEY_LEFT);
             if (steer.x >  12000) keys |= 1u << (wine_nx_pad_keys[WINE_NX_KEY_LRIGHT] ? WINE_NX_KEY_LRIGHT : WINE_NX_KEY_RIGHT);
         }
-        if (wine_nx_device_mode[WINE_NX_DEVICE_RIGHT] == WINE_NX_PRESSES)
+        if (!wine_nx_dinput_enabled && wine_nx_device_mode[WINE_NX_DEVICE_RIGHT] == WINE_NX_PRESSES)
         {
             if (stick.y >  12000) keys |= 1u << WINE_NX_KEY_RUP;
             if (stick.y < -12000) keys |= 1u << WINE_NX_KEY_RDOWN;
@@ -3883,7 +3884,7 @@ int main( int argc, char **argv )
         struct launcher_settings settings;
         struct launcher_kv kv;
         char settings_path[520];
-
+        wine_nx_dinput_enabled = 0;
         runtime_dxvk = 0;
         runtime_dxvk_hud = 0;
 #ifdef WINE_NX_MESA_SWITCH
@@ -3900,6 +3901,7 @@ int main( int argc, char **argv )
             launcher_kv_load( &kv, settings_path ) && kv.size)
         {
             launcher_settings_read( &kv, &settings );
+            wine_nx_dinput_enabled = settings.directinput;
             if (settings.verbose >= 0) wine_nx_runtime_verbose = settings.verbose;
             if (settings.profile >= 0) runtime_profile = settings.profile;
             if (settings.framebuffer >= 0) wine_nx_compositor_mode = !settings.framebuffer;
@@ -3967,6 +3969,7 @@ int main( int argc, char **argv )
     log_line( "[INIT] verbose traces %s (verbose.txt)", wine_nx_runtime_verbose ? "on" : "off" );
     log_line( "[INIT] profiler %s (profile.txt)", runtime_profile ? "on" : "off" );
     log_line( "[INIT] windows shown by %s", wine_nx_compositor_mode ? "the OpenGL compositor" : "the framebuffer" );
+    log_line( "[NXDINPUT] analog controller %s for this game", wine_nx_dinput_enabled ? "enabled" : "disabled" );
     /* After the launcher, where X may have turned it on or off. */
     if (runtime_profile)
     {

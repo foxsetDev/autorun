@@ -25,6 +25,7 @@ _Static_assert( NX_PAD_A == HidNpadButton_A && NX_PAD_B == HidNpadButton_B && NX
  * recent the runtime stops turning the pad into keys and mouse clicks
  * (wine_nx_pointer_poll in runtime.c), so the program does not get both. */
 u64 wine_nx_xinput_last_poll;
+int wine_nx_dinput_enabled;
 
 static pthread_mutex_t pad_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* The floating keyboard (osk.c). */
@@ -35,7 +36,7 @@ static int pad_ready;
 static XINPUT_GAMEPAD last_gamepad;
 static DWORD packet;
 
-static NTSTATUS nx_xinput_get_state_unix( void *args )
+static NTSTATUS nx_xinput_get_state_common( void *args, int xinput_poll )
 {
     struct nx_xinput_state_params *params = args;
     XINPUT_GAMEPAD gamepad;
@@ -65,10 +66,25 @@ static NTSTATUS nx_xinput_get_state_unix( void *args )
         params->connected = 1;
         params->state.dwPacketNumber = packet;
         params->state.Gamepad = gamepad;
-        wine_nx_xinput_last_poll = armGetSystemTick();
+        if (xinput_poll) wine_nx_xinput_last_poll = armGetSystemTick();
     }
     pthread_mutex_unlock( &pad_mutex );
     return STATUS_SUCCESS;
+}
+
+static NTSTATUS nx_xinput_get_state_unix( void *args )
+{
+    return nx_xinput_get_state_common( args, 1 );
+}
+
+static NTSTATUS nx_xinput_peek_state_unix( void *args )
+{
+    if (!wine_nx_dinput_enabled)
+    {
+        ((struct nx_xinput_state_params *)args)->connected = 0;
+        return STATUS_SUCCESS;
+    }
+    return nx_xinput_get_state_common( args, 0 );
 }
 
 /* Rumble is not sent yet; the pad just has to be there. */
@@ -86,6 +102,7 @@ const unixlib_entry_t wine_nx_xinput_wow64_unix_funcs[] =
 {
     nx_xinput_get_state_unix,
     nx_xinput_set_state_unix,
+    nx_xinput_peek_state_unix,
 };
 C_ASSERT( ARRAY_SIZE(wine_nx_xinput_wow64_unix_funcs) == nx_xinput_funcs_count );
 const unsigned int wine_nx_xinput_wow64_unix_count = ARRAY_SIZE(wine_nx_xinput_wow64_unix_funcs);
@@ -94,6 +111,7 @@ const unixlib_entry_t wine_nx_xinput_unix_funcs[] =
 {
     nx_xinput_get_state_unix,
     nx_xinput_set_state_unix,
+    nx_xinput_peek_state_unix,
 };
 C_ASSERT( ARRAY_SIZE(wine_nx_xinput_unix_funcs) == nx_xinput_funcs_count );
 const unsigned int wine_nx_xinput_unix_count = ARRAY_SIZE(wine_nx_xinput_unix_funcs);
