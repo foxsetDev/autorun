@@ -59,7 +59,7 @@ jobs:
             dlls/win32u/aarch64-windows/win32u.dll \
             dlls/apisetschema/aarch64-windows/apisetschema.dll
 
-      - name: Compile Switch runtime (without Mesa)
+      - name: Compile Switch runtime with stock graphics libraries
         run: |
           set -eu
           sh wine-nx-probe/tools/bootstrap-box64-core.sh
@@ -71,10 +71,14 @@ jobs:
                 -DCMAKE_TOOLCHAIN_FILE=/work/wine-nx-probe/cmake/switch-devkitA64.cmake \
                 -DWINE_NX_PE_BUILD_DIR=/work/wine-nx-probe/build-wine-wow64-pe \
                 -DWINE_NX_BOX64_DYNAREC=ON -DCMAKE_BUILD_TYPE=Release
+              for lib in SWITCH_EGL SWITCH_GLAPI SWITCH_DRM_NOUVEAU; do
+                grep -E "^${lib}:FILEPATH=/opt/devkitpro/" \
+                  wine-nx-probe/build-switch-wow64-dynarec/CMakeCache.txt
+              done
               cmake --build wine-nx-probe/build-switch-wow64-dynarec --target wine-nx-runtime-nro -j4
             '
 
-      # Compile-only: this runtime lacks Mesa and must not replace a game-ready NRO.
+      # Compile-only: stock Mesa has not been qualified for RBR or this fork's full release.
       - uses: actions/upload-artifact@v4
         with:
           name: analog-controller-compile-only

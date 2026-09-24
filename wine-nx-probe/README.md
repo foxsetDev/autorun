@@ -329,9 +329,9 @@ default and stored as `directinput=1` in that game's `.wine-nx.txt`. The left
 stick is X/Y; the right stick is Rx/Ry, with its upward travel also exposed as
 gas (Z) and downward travel as brake (Rz). While enabled, neither stick sends
 Autorun's mouse movement or keyboard directions; other button mappings and
-touch input remain available for menus. This bridge has host mapping tests but
-still needs a Switch build and in-game validation, including axis binding in
-Richard Burns Rally.
+touch input remain available for menus. This bridge passes host mapping tests
+and a CI compile check, but still needs a graphics-qualified Switch package
+and in-game validation, including axis binding in Richard Burns Rally.
 
 **Address space** under Game Settings says what a game needs of the address space
 Horizon gives Wine-NX. A game with no relocations is linked for one address and
