@@ -15,6 +15,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Download upstream Mesa Switch SDK
+        uses: actions/download-artifact@v4
+        with:
+          name: mesa-26.2.2-switch-unified-horizon-sdk
+          repository: danfromtico/mesa-switch
+          run-id: 35860399051
+          github-token: ${{ github.token }}
+          path: wine-nx-probe/build-mesa-switch/install
+
+      - name: Check Mesa Switch SDK
+        run: |
+          set -eu
+          sdk=wine-nx-probe/build-mesa-switch/install/opt/devkitpro/portlibs/switch/lib
+          for lib in EGL GL glapi vulkan mesa_util_c11 blake3 mesa_util mesa_util_simd xmlconfig; do
+            test -s "$sdk/lib$lib.a"
+          done
+
       - name: Check stick mapping and per-game setting
         run: |
           set -eu
@@ -59,7 +76,7 @@ jobs:
             dlls/win32u/aarch64-windows/win32u.dll \
             dlls/apisetschema/aarch64-windows/apisetschema.dll
 
-      - name: Compile Switch runtime with stock graphics libraries
+      - name: Compile Switch runtime with Mesa Switch graphics libraries
         run: |
           set -eu
           sh wine-nx-probe/tools/bootstrap-box64-core.sh
@@ -70,15 +87,12 @@ jobs:
               cmake -S wine-nx-probe -B wine-nx-probe/build-switch-wow64-dynarec -G Ninja \
                 -DCMAKE_TOOLCHAIN_FILE=/work/wine-nx-probe/cmake/switch-devkitA64.cmake \
                 -DWINE_NX_PE_BUILD_DIR=/work/wine-nx-probe/build-wine-wow64-pe \
-                -DWINE_NX_BOX64_DYNAREC=ON -DCMAKE_BUILD_TYPE=Release
-              for lib in SWITCH_EGL SWITCH_GLAPI SWITCH_DRM_NOUVEAU; do
-                grep -E "^${lib}:FILEPATH=/opt/devkitpro/" \
-                  wine-nx-probe/build-switch-wow64-dynarec/CMakeCache.txt
-              done
+                -DWINE_NX_BOX64_DYNAREC=ON -DCMAKE_BUILD_TYPE=Release \
+                -DWINE_NX_MESA_SWITCH_DIR=/work/wine-nx-probe/build-mesa-switch/install/opt/devkitpro/portlibs/switch/lib
               cmake --build wine-nx-probe/build-switch-wow64-dynarec --target wine-nx-runtime-nro -j4
             '
 
-      # Compile-only: stock Mesa has not been qualified for RBR or this fork's full release.
+      # Compile-only: neither the runtime nor controller mapping has been tested on Switch.
       - uses: actions/upload-artifact@v4
         with:
           name: analog-controller-compile-only
