@@ -65,6 +65,8 @@ jobs:
           sh wine-nx-probe/tools/bootstrap-box64-core.sh
           docker run --rm --platform linux/arm64 -v "$PWD:/work" -w /work \
             devkitpro/devkita64 sh -ec '
+              git config --global --add safe.directory /work
+              git config --global --add safe.directory /work/wine-nx-probe/vendor/box64
               cmake -S wine-nx-probe -B wine-nx-probe/build-switch-wow64-dynarec -G Ninja \
                 -DCMAKE_TOOLCHAIN_FILE=/work/wine-nx-probe/cmake/switch-devkitA64.cmake \
                 -DWINE_NX_PE_BUILD_DIR=/work/wine-nx-probe/build-wine-wow64-pe \
